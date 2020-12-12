@@ -2,7 +2,7 @@ const glsl = x => x;
 const vert = x => x;
 const frag = x => x;
 
-const vsSource = `
+const vsSource = vert`
     attribute vec4 aVertexPosition;
 
     uniform mat4 uModelViewMatrix;
@@ -13,7 +13,7 @@ const vsSource = `
     }
 `;
 
-const fsSource = `
+const fsSource = frag`
     void main() {
         gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
     }
@@ -59,31 +59,6 @@ function draw(gl) {
         return null;
     }
 
-    const programInfo = {
-        program: shaderProgram,
-        attribLocations: {
-            vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
-        },
-        uniformLocations: {
-            projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-            modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
-        },
-    };
-
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-    const positions = [
-        -1.0,  1.0,
-         1.0,  1.0,
-        -1.0, -1.0,
-         1.0, -1.0,
-    ];
-
-    gl.bufferData(gl.ARRAY_BUFFER,
-        new Float32Array(positions),
-        gl.STATIC_DRAW);
-
     
     gl.clearColor(0.0, 0.0, 0.0, 1.0); // Set clear color to black, fully opaque
     gl.clearDepth(1.0); // Clear everything
@@ -92,53 +67,66 @@ function draw(gl) {
     // Clear the canvas before we start drawing on it.
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    const fieldOfView = 45 * Math.PI / 180;   // in radians
-    const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    const zNear = 0.1;
-    const zFar = 100.0;
+    {
+        // create and bind buffer
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
+        const positions = [
+            -1.0,  1.0,
+            1.0,  1.0,
+            -1.0, -1.0,
+            1.0, -1.0,
+        ];
+
+        // fill buffer with positions
+        gl.bufferData(gl.ARRAY_BUFFER,
+            new Float32Array(positions),
+            gl.STATIC_DRAW
+        );
+
+        // pass buffer to GLSL
+        const vertexPosition = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
+        gl.vertexAttribPointer(
+            vertexPosition,
+            2, // pull out 2 values per iteration
+            gl.FLOAT, // the data in the buffer is 32bit floats
+            false,  // don't normalize
+            // how many bytes to get from one set of values to the next
+            // 0 = use type and numComponents above
+            0,         
+            0, // how many bytes inside the buffer to start from)
+        );
+        gl.enableVertexAttribArray(vertexPosition);
+    }
+
+    gl.useProgram(shaderProgram);
+
+    // create and bind projection matrix
     const projectionMatrix = mat4.create();
     mat4.perspective(projectionMatrix,
-        fieldOfView,
-        aspect,
-        zNear,
-        zFar);
+        45 * Math.PI / 180,   // fieldOfView in radians
+        gl.canvas.clientWidth / gl.canvas.clientHeight, // aspect
+        0.1, // zNear
+        100.0, // zFar
+    );
+    gl.uniformMatrix4fv(
+        gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
+        false,
+        projectionMatrix);
 
+    // create and bind mode view matrix
     const modelViewMatrix = mat4.create();
     mat4.translate(modelViewMatrix,     // destination matrix
         modelViewMatrix,     // matrix to translate
         [-0.0, 0.0, -6.0]);  // amount to translate
-
-    {
-        const numComponents = 2;  // pull out 2 values per iteration
-        const type = gl.FLOAT;    // the data in the buffer is 32bit floats
-        const normalize = false;  // don't normalize
-        const stride = 0;         // how many bytes to get from one set of values to the next
-                                // 0 = use type and numComponents above
-        const offset = 0;         // how many bytes inside the buffer to start from
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.vertexAttribPointer(
-            programInfo.attribLocations.vertexPosition,
-            numComponents,
-            type,
-            normalize,
-            stride,
-            offset);
-        gl.enableVertexAttribArray(
-            programInfo.attribLocations.vertexPosition);
-    }
-
-    gl.useProgram(programInfo.program);
     gl.uniformMatrix4fv(
-        programInfo.uniformLocations.projectionMatrix,
-        false,
-        projectionMatrix);
-    gl.uniformMatrix4fv(
-        programInfo.uniformLocations.modelViewMatrix,
+        gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
         false,
         modelViewMatrix);
 
     {
+        // draw shader
         const offset = 0;
         const vertexCount = 4;
         gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
