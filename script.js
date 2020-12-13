@@ -4,18 +4,24 @@ const frag = x => x;
 
 const vsSource = vert`
     attribute vec4 aVertexPosition;
+    attribute vec4 aVertexColor;
 
     uniform mat4 uModelViewMatrix;
     uniform mat4 uProjectionMatrix;
 
+    varying lowp vec4 vColor;
+
     void main() {
         gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+        vColor = aVertexColor;
     }
 `;
 
 const fsSource = frag`
+    varying lowp vec4 vColor;
+
     void main() {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        gl_FragColor = vColor;
     }
 `;
 
@@ -94,10 +100,34 @@ function draw(gl) {
             false,  // don't normalize
             // how many bytes to get from one set of values to the next
             // 0 = use type and numComponents above
-            0,         
+            0,
             0, // how many bytes inside the buffer to start from)
         );
         gl.enableVertexAttribArray(vertexPosition);
+    }
+
+    {
+        const colors = [
+            1.0,  1.0,  1.0,  1.0,    // white
+            1.0,  0.0,  0.0,  1.0,    // red
+            0.0,  1.0,  0.0,  1.0,    // green
+            0.0,  0.0,  1.0,  1.0,    // blue
+        ];
+
+        const colorBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+        
+        const vertexColor = gl.getAttribLocation(shaderProgram, 'aVertexColor');
+        gl.vertexAttribPointer(
+            vertexColor,
+            4,
+            gl.FLOAT,
+            false,
+            0,
+            0);
+        gl.enableVertexAttribArray(
+            vertexColor);
     }
 
     gl.useProgram(shaderProgram);
