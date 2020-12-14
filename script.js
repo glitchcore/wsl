@@ -51,7 +51,7 @@ function loadShader(gl, type, source) {
     return shader;
 }
 
-function draw(gl) {
+function init(gl) {
     const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
     const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
 
@@ -65,13 +65,8 @@ function draw(gl) {
         return null;
     }
 
-    
-    gl.clearColor(0.0, 0.0, 0.0, 1.0); // Set clear color to black, fully opaque
-    gl.clearDepth(1.0); // Clear everything
     gl.enable(gl.DEPTH_TEST); // Enable depth testing
     gl.depthFunc(gl.LEQUAL); // Near things obscure far things
-    // Clear the canvas before we start drawing on it.
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     {
         // create and bind buffer
@@ -150,17 +145,44 @@ function draw(gl) {
     mat4.translate(modelViewMatrix,     // destination matrix
         modelViewMatrix,     // matrix to translate
         [-0.0, 0.0, -6.0]);  // amount to translate
-    gl.uniformMatrix4fv(
-        gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
-        false,
-        modelViewMatrix);
 
-    {
-        // draw shader
-        const offset = 0;
-        const vertexCount = 4;
-        gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
+    const rotatedMatrix = mat4.create();
+
+    const modelViewMatrixPointer = gl.getUniformLocation(shaderProgram, 'uModelViewMatrix');
+
+    return {
+        shaderProgram,
+        modelViewMatrix,
+        rotatedMatrix,
+        modelViewMatrixPointer,
     }
+}
+
+let squareRotation = 2.0;
+
+function draw(gl, ctx, dt) {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0); // Set clear color to black, fully opaque
+    gl.clearDepth(1.0); // Clear everything
+    // Clear the canvas before we start drawing on it.
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    mat4.rotate(ctx.rotatedMatrix,  // destination matrix
+        ctx.modelViewMatrix,  // matrix to rotate
+        squareRotation,   // amount to rotate in radians
+        [0, 0, 1]);       // axis to rotate around
+
+    
+    gl.uniformMatrix4fv(
+        ctx.modelViewMatrixPointer,
+        false,
+        ctx.rotatedMatrix);
+    
+    gl.drawArrays(gl.TRIANGLE_STRIP,
+        0, // offset
+        4, // vertexCount
+    );
+
+    squareRotation += dt;
 }
 
 function main() {
@@ -174,8 +196,22 @@ function main() {
         return;
     }
 
-    // draw2(gl);
-    draw(gl);
+    const ctx = init(gl);
+
+    let then = 0;
+    
+    // Draw the scene repeatedly
+    function render(now) {
+        now *= 0.001;  // convert to seconds
+        const dt = now - then;
+        then = now;
+        
+        draw(gl, ctx, dt);
+        
+        requestAnimationFrame(render);
+    }
+    
+    requestAnimationFrame(render);
 }
   
 window.onload = main;
