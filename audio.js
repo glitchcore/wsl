@@ -22,7 +22,76 @@ let hsv2rgb = (hsv) => {
         else { rgb.r = 0; rgb.g = 0; rgb.b = 0 }
     }
 
-    return `rgb(${Math.round(rgb.r)},${Math.round(rgb.g)},${Math.round(rgb.b)})`;
+    return rgb;
+}
+
+let cubeRotation = 2.0;
+
+function draw(gl, ctx, dt, color) {
+    gl.clearColor(0.0, 0.0, 0.0, 0.0); // Set clear color to black, fully opaque
+    gl.clearDepth(1.0); // Clear everything
+    // Clear the canvas before we start drawing on it.
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    {
+        const faceColors = [0, 30, 50, 70, 90, 120]
+            .map(x => hsv2rgb({h: (x + color) % 360, s: 50, v: 50}))
+            .map(x => [x.r/255, x.g/255, x.b/255, 1.0]);
+
+        var colors = [];
+        
+        for (var j = 0; j < faceColors.length; ++j) {
+            const c = faceColors[j];
+            
+            // Repeat each color four times for the four vertices of the face
+            colors = colors.concat(c, c, c, c);
+        }
+
+        const colorBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+        
+        const vertexColor = gl.getAttribLocation(ctx.shaderProgram, 'aVertexColor');
+        gl.vertexAttribPointer(
+            vertexColor,
+            4,
+            gl.FLOAT,
+            false,
+            0,
+            0);
+        gl.enableVertexAttribArray(
+            vertexColor);
+    }
+
+    mat4.rotate(ctx.rotatedMatrix,  // destination matrix
+        ctx.modelViewMatrix,  // matrix to rotate
+        cubeRotation,   // amount to rotate in radians
+        [0, 0, 1]);       // axis to rotate around
+
+    mat4.rotate(ctx.rotatedMatrix,  // destination matrix
+        ctx.modelViewMatrix,  // matrix to rotate
+        cubeRotation,     // amount to rotate in radians
+        [0, 0, 1]);       // axis to rotate around (Z)
+    
+    mat4.rotate(ctx.rotatedMatrix,  // destination matrix
+        ctx.rotatedMatrix,  // matrix to rotate
+        cubeRotation * .7,// amount to rotate in radians
+        [0, 1, 0]);       // axis to rotate around (X)
+
+    
+    gl.uniformMatrix4fv(
+        ctx.modelViewMatrixPointer,
+        false,
+        ctx.rotatedMatrix);
+    
+    gl.drawElements(
+        gl.TRIANGLES,
+        2 * 3 * 6, // vertexCount
+        gl.UNSIGNED_SHORT, // type
+        0 // offset
+    );
+
+    cubeRotation += dt;
 }
 
 function make_noise(gl, ctx) {
@@ -30,7 +99,7 @@ function make_noise(gl, ctx) {
 
     let supersaw = [];
 
-    for(let i = 0; i < 100; i++) {
+    for(let i = 0; i < 20; i++) {
         let oscillator = context.createOscillator();
         oscillator.type = 'sine';
         oscillator.frequency.value = 220;
@@ -80,7 +149,10 @@ function make_noise(gl, ctx) {
                 Math.sin(t / 1000 + i/a.length * Math.PI) * det
         );
 
-        document.body.style.backgroundColor = hsv2rgb({h: 0, s: 0, v: det * 5});
+        let rgb = hsv2rgb({h: 0, s: 0, v: det * 5});
+        document.body.style.backgroundColor = 
+        `rgb(${Math.round(rgb.r)},${Math.round(rgb.g)},${Math.round(rgb.b)})`;
+        
         bandpass.frequency.value = 100 + det * 100;
     }, 20);
 
@@ -103,7 +175,7 @@ function make_noise(gl, ctx) {
         const dt = now - then;
         then = now;
         
-        draw(gl, ctx, dt * det);
+        draw(gl, ctx, dt * det / 2, d * 100);
         
         requestAnimationFrame(render);
     }

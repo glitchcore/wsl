@@ -10,18 +10,25 @@ const vsSource = vert`
     uniform mat4 uProjectionMatrix;
 
     varying lowp vec4 vColor;
+    varying lowp vec4 vPosition;
 
     void main() {
         gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+        vPosition = aVertexPosition;
         vColor = aVertexColor;
     }
 `;
 
 const fsSource = frag`
     varying lowp vec4 vColor;
+    varying lowp vec4 vPosition;
 
     void main() {
         gl_FragColor = vColor;
+        gl_FragColor.xyz *=
+            sin((vPosition.x + (vColor.x * 20.0)) * 2.0) *
+            sin((vPosition.y + (vColor.y * vColor.z * 40.0)) * 2.0) *
+            sin((vPosition.z + (vColor.z * 20.0)) * 2.0) + 0.5;
     }
 `;
 
@@ -132,41 +139,6 @@ function init(gl) {
         gl.enableVertexAttribArray(vertexPosition);
     }
 
-    {
-        const faceColors = [
-            [1.0,  1.0,  1.0,  1.0],    // Front face: white
-            [1.0,  0.0,  0.0,  1.0],    // Back face: red
-            [0.0,  1.0,  0.0,  1.0],    // Top face: green
-            [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-            [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-            [1.0,  0.0,  1.0,  1.0],    // Left face: purple
-        ];
-
-        var colors = [];
-        
-        for (var j = 0; j < faceColors.length; ++j) {
-            const c = faceColors[j];
-            
-            // Repeat each color four times for the four vertices of the face
-            colors = colors.concat(c, c, c, c);
-        }
-
-        const colorBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-        
-        const vertexColor = gl.getAttribLocation(shaderProgram, 'aVertexColor');
-        gl.vertexAttribPointer(
-            vertexColor,
-            4,
-            gl.FLOAT,
-            false,
-            0,
-            0);
-        gl.enableVertexAttribArray(
-            vertexColor);
-    }
-
     gl.useProgram(shaderProgram);
 
     // create and bind projection matrix
@@ -211,45 +183,6 @@ function init(gl) {
         rotatedMatrix,
         modelViewMatrixPointer,
     }
-}
-
-let cubeRotation = 2.0;
-
-function draw(gl, ctx, dt) {
-    gl.clearColor(0.0, 0.0, 0.0, 0.0); // Set clear color to black, fully opaque
-    gl.clearDepth(1.0); // Clear everything
-    // Clear the canvas before we start drawing on it.
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    mat4.rotate(ctx.rotatedMatrix,  // destination matrix
-        ctx.modelViewMatrix,  // matrix to rotate
-        cubeRotation,   // amount to rotate in radians
-        [0, 0, 1]);       // axis to rotate around
-
-    mat4.rotate(ctx.rotatedMatrix,  // destination matrix
-        ctx.modelViewMatrix,  // matrix to rotate
-        cubeRotation,     // amount to rotate in radians
-        [0, 0, 1]);       // axis to rotate around (Z)
-    
-    mat4.rotate(ctx.rotatedMatrix,  // destination matrix
-        ctx.rotatedMatrix,  // matrix to rotate
-        cubeRotation * .7,// amount to rotate in radians
-        [0, 1, 0]);       // axis to rotate around (X)
-
-    
-    gl.uniformMatrix4fv(
-        ctx.modelViewMatrixPointer,
-        false,
-        ctx.rotatedMatrix);
-    
-    gl.drawElements(
-        gl.TRIANGLES,
-        2 * 3 * 6, // vertexCount
-        gl.UNSIGNED_SHORT, // type
-        0 // offset
-    );
-
-    cubeRotation += dt;
 }
 
 function main() {
