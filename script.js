@@ -201,4 +201,7 @@ function main() {
     make_noise(gl, ctx);
 }
   
-window.onclick = main;
+window.onclick = () => {
+    setTimeout(main, 0);
+    setTimeout(main, 5000);
+};
