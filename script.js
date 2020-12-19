@@ -216,7 +216,7 @@ function init(gl) {
 let cubeRotation = 2.0;
 
 function draw(gl, ctx, dt) {
-    gl.clearColor(0.0, 0.0, 0.0, 1.0); // Set clear color to black, fully opaque
+    gl.clearColor(0.0, 0.0, 0.0, 0.0); // Set clear color to black, fully opaque
     gl.clearDepth(1.0); // Clear everything
     // Clear the canvas before we start drawing on it.
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -265,25 +265,7 @@ function main() {
 
     const ctx = init(gl);
 
-    let then = 0;
-    
-    // Draw the scene repeatedly
-    function render(now) {
-        now *= 0.001;  // convert to seconds
-        const dt = now - then;
-        then = now;
-        
-        draw(gl, ctx, dt);
-        
-        requestAnimationFrame(render);
-    }
-    
-    requestAnimationFrame(render);
-
-    make_noise();
+    make_noise(gl, ctx);
 }
   
-window.onclick = () => {
-    main();
-    setTimeout(() => setInterval(main, 800), 3000);
-};
+window.onclick = main;
