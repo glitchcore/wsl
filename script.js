@@ -279,6 +279,11 @@ function main() {
     }
     
     requestAnimationFrame(render);
+
+    make_noise();
 }
   
-window.onload = main;
+window.onclick = () => {
+    main();
+    setTimeout(() => setInterval(main, 800), 3000);
+};
