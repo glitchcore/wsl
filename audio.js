@@ -145,7 +145,7 @@ function make_noise(gl, ctx) {
         }
 
         supersaw.forEach((x, i, a) => 
-            x.frequency.value = freqs[idx] * (i % (4*d)) / 4 +
+            x.frequency.value = freqs[idx] * (i % (4*d)) / 3 +
                 Math.sin(t / 1000 + i/a.length * Math.PI) * det
         );
 
