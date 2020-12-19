@@ -22,6 +22,11 @@ function make_noise() {
             if(idx == freqs.length) {
                 idx = 0;
             }
+            if(idx < freqs.length / 2) {
+                document.body.style.backgroundColor = "black";
+            } else {
+                document.body.style.backgroundColor = "red";
+            }
         }
     }, 1);
 
