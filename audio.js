@@ -78,9 +78,11 @@ function draw(gl, ctx, dt, color) {
         cubeRotation * .7,// amount to rotate in radians
         [0, 1, 0]);       // axis to rotate around (X)
 
+    let modelViewMatrixPointer = gl.getUniformLocation(ctx.shaderProgram, 'uModelViewMatrix');
+
     
     gl.uniformMatrix4fv(
-        ctx.modelViewMatrixPointer,
+        modelViewMatrixPointer,
         false,
         ctx.rotatedMatrix);
     
